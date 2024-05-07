@@ -133,7 +133,7 @@ void initWorkingFiles(const fs::path& pathWork) {
 void initFunc() {
     fs::path pathToModpack = parameter.substr(parameter.find("-") + 1);
     if (choosenProject.length() > 0) {
-        if (std::filesystem::exists(pathToModpack)) {
+        if (std::filesystem::exists(pathToModpack / "config\\ftbquests\\quests")) {
             pathToModpack += "\\config\\ftbquests\\quests";
             copyDirectory(pathToModpack, choosenProject + "\\input");
             initWorkingFiles(choosenProject + "\\workingFiles");
@@ -150,12 +150,12 @@ void initFunc() {
 
 void makeProjectFunc() {
     if (parameter.find("-") != std::string::npos) {
-        std::wstring nameDir = depozit::stringToWstring(parameter.substr(parameter.find("-") + 1));
+        std::wstring nameDir = depozit::stringToWstring(parameter.substr(parameter.find("-") + 1)).c_str();
         if (nameDir.length() > 0) {
-            fs::create_directory(nameDir);
-            fs::create_directories(nameDir + L"\\input");
-            fs::create_directories(nameDir + L"\\workingFiles");
-            fs::create_directories(nameDir + L"\\output");
+            CreateDirectory(nameDir.c_str(), NULL);
+            CreateDirectory((nameDir + L"\\input").c_str(), NULL);
+            CreateDirectory((nameDir + L"\\workingFiles").c_str(), NULL);
+            CreateDirectory((nameDir + L"\\output").c_str(), NULL);
             fs::path path = parameter.substr(parameter.find("-") + 1) + "\\prop.json";
             initJsonFile(path, parameter.substr(parameter.find("-") + 1));
             choosenProject = ".\\" + parameter.substr(parameter.find("-") + 1);
@@ -188,16 +188,26 @@ std::vector<std::wstring> readFileByWstring(const fs::path& path) {
     std::wifstream input(path);
     if (!input.is_open()) {
         std::cerr << "file isnt open\n";
+        input.close();
         return out;
     }
     std::wstring line;
     while (std::getline(input, line)) {
         out.push_back(line);
     }
+    input.close();
     return out;
 }
 
-void buildFunc() {
+void writeWstringInFile(const fs::path& path, const std::vector<std::wstring>& file) {
+    std::ofstream output(path);
+    for (const auto& line : file) {
+        output << depozit::wstringToString(line).c_str() << std::endl;
+    }
+    output.close();
+}
+
+void buildFunc() {//didnt work
     if(choosenProject.length() > 0) {
         
         std::cerr << "build start\n";
@@ -232,7 +242,6 @@ void buildFunc() {
         //iterating through the values from translate.txt
             for (const auto& line : translateFile) {
                 if (line.find(L"path:") != std::wstring::npos) {
-
                     pathToQuestFileInput = choosenProject + "\\input\\chapters";
                     pathToQuestFileInput += line.substr(line.find_last_of(L"\\"));
 
@@ -260,11 +269,11 @@ void buildFunc() {
                             origFile[posInFile].replace(origFile[posInFile].find(origLocStr.first), origLocStr.first.length(), origLocStr.second);
                         }
                     }
-
                 }
                 else {
                     remove(pathToQuestFileOutput);
                     std::wofstream out(pathToQuestFileOutput);
+                    
                     for (int i = 0; i < origFile.size(); i++) {
                         out << origFile[i] << L"\n";
                     }

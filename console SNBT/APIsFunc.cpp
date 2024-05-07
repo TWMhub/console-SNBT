@@ -73,7 +73,7 @@ void translateFunc() {
 
 	std::string nameAPI = parameter.substr(parameter.find("-") + 1, parameter.find_last_of("-") - parameter.find("-") - 2);
 	std::string booleanStr = parameter.substr(parameter.find_last_of("-") + 1);
-	bool boolean;
+	bool boolean = true;
 
 	if (nameAPI.length() == 0) {
 		std::cerr << "error with parameters\n";
@@ -115,20 +115,23 @@ void translateFunc() {
 		return;
 	}
 	translateFile.close();
-
-	std::vector<std::wstring> translateLines = readFileByWstring(choosenProject + "\\workingFiles\\translate.txt");
+	std::vector<std::wstring> translateLines;
+	translateLines.resize(5000);
+	translateLines = readFileByWstring(choosenProject + "\\workingFiles\\translate.txt");
+	translateLines.shrink_to_fit();
 
 	for (auto& line : translateLines) {
 		if (line.find(L"path:") == std::wstring::npos) {
-			//translateDeepl(line, apiKey);
 			if (line.find(L"&") == std::wstring::npos) {
-				std::wcerr << line;
+				translateDeepl(line, apiKey);
 			}
-			else if (line.find(L"&") != std::wstring::npos && boolean) {
-				std::wcerr << line;
+			else if (line.find(L"&") != std::wstring::npos && boolean == true) {
+				translateDeepl(line, apiKey);
 			}
 		}
 	}
+
+	writeWstringInFile(choosenProject + "\\workingFiles\\translate.txt", translateLines);
 	std::cerr << "translate complete\n";
 }
 
@@ -163,7 +166,7 @@ std::wstring cprRequestDeepl(const std::wstring& string, const std::string& apiK
 		lastColonn = response.text.find_last_of(":");
 		lastForging = response.text.find_last_of("\"");
 		out = response.text.substr(lastColonn + 2, lastForging - lastColonn - 2);
-		return depozit::stringToWstring(out);
+		return depozit::stringToWstring(out.c_str()).c_str();
 	}
 	return L"";
 }

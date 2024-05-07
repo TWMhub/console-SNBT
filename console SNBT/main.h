@@ -4,7 +4,6 @@
 #include <map>
 #include <unordered_map>
 #include <Windows.h>
-#include <map>
 #include <fstream>
 #include <filesystem>
 #include <chrono>
@@ -29,6 +28,7 @@ void makeProjectFunc();
 void buildFunc();
 void readFileByWstring(const fs::path&, std::vector<std::wstring>&);
 std::vector<std::wstring> readFileByWstring(const fs::path&);
+void writeWstringInFile(const fs::path&, const std::vector<std::wstring>&);
 
 //APIs 
 void addAPIFunc();
