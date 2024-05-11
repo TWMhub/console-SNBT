@@ -230,61 +230,93 @@ void buildFunc() {//didnt work
         
         //get translate
         std::vector<std::wstring> translateFile;
-        readFileByWstring(choosenProject + "\\workingFiles\\translate.txt", translateFile);
-
+        translateFile = readFileByWstring(choosenProject + "\\workingFiles\\translate.txt");
         //checking whether the file has been opened and written to the vector
         if (translateFile.size() == 0) {
             std::cerr << "error with translate file\n";
             return;
         }
 
-        try{
+        
         //iterating through the values from translate.txt
-            for (const auto& line : translateFile) {
-                if (line.find(L"path:") != std::wstring::npos) {
-                    pathToQuestFileInput = choosenProject + "\\input\\chapters";
-                    pathToQuestFileInput += line.substr(line.find_last_of(L"\\"));
+        for (const auto& line : translateFile) {
+            if (line.find(L"path:") != std::wstring::npos) {
+                pathToQuestFileInput = choosenProject + "\\input\\chapters";
+                pathToQuestFileInput += line.substr(line.find_last_of(L"\\"));
 
-                    pathToQuestFileOutput = choosenProject + "\\output\\chapters";
-                    pathToQuestFileOutput += line.substr(line.find_last_of(L"\\"));
+                pathToQuestFileOutput = choosenProject + "\\output\\chapters";
+                pathToQuestFileOutput += line.substr(line.find_last_of(L"\\"));
 
-                    readFileByWstring(pathToQuestFileInput, origFile);
-                    if (origFile.size() == 0) {
-                        std::cerr << "snbt file isnt open\n";
-                        break;
-                    }
+                readFileByWstring(pathToQuestFileInput, origFile);
+                if (origFile.size() == 0) {
+                    std::cerr << "snbt file isnt open\n";
+                    break;
                 }
-                else if (line.length() != 0) {
-                    colon1 = line.find(L":");
-                    colon2 = line.find(L":", colon1 + 1);
+            }
+            else if (line.length() != 0) {
+                colon1 = line.find(L":");
+                colon2 = line.find(L":", colon1 + 1);
+
+                //crutch
+                int count = 0;
+                for (int i = colon2 + 1; i < line.length(); i++)
+                    if (line[i] == ':')
+                        count++;
+                if (count == 1) {
                     colon3 = line.find_last_of(L":");
-
-                    if (colon1 != std::wstring::npos && colon2 != std::wstring::npos && colon3 != std::wstring::npos) {
-                        posInFile = stoi(line.substr(0, colon1));
-                        typeText = depozit::wstringToType(line.substr(colon1 + 1, colon2 - colon1 - 1));
-                        origLocStr.first = line.substr(colon2 + 1, colon3 - colon2 - 1);
-                        origLocStr.second = line.substr(colon3 + 1);
-
-                        if (typeText != depozit::type::unknown && origLocStr.second.length() > 0) {
-                            origFile[posInFile].replace(origFile[posInFile].find(origLocStr.first), origLocStr.first.length(), origLocStr.second);
+                }
+                else {
+                    if (count % 2 == 0) {
+                        colon3 = line.find_last_of(L":");
+                    }
+                    else {
+                        int countSkippedPipes = (count - 1) / 2;
+                        for (int i = colon2 + 1; i < line.length(); i++) {
+                            if (line[i] == ':') {
+                                if (countSkippedPipes == 0) {
+                                    colon3 = i;
+                                    break;
+                                }
+                                else {
+                                    countSkippedPipes--;
+                                }
+                            }
                         }
                     }
                 }
-                else {
-                    remove(pathToQuestFileOutput);
-                    std::wofstream out(pathToQuestFileOutput);
+
+                
+                if (colon1 != std::wstring::npos && colon2 != std::wstring::npos && colon3 != std::wstring::npos) {
+                    posInFile = stoi(line.substr(0, colon1));
+                    typeText = depozit::wstringToType(line.substr(colon1 + 1, colon2 - colon1 - 1));
+                    origLocStr.first = line.substr(colon2 + 1, colon3 - colon2 - 1);
+                    origLocStr.second = line.substr(colon3 + 1);
+
                     
-                    for (int i = 0; i < origFile.size(); i++) {
-                        out << origFile[i] << L"\n";
+                    if (typeText != depozit::type::unknown && origLocStr.second.length() > 0) {
+                        try {
+                            origFile[posInFile].replace(origFile[posInFile].find_first_of(L"\"") + 1, 
+                                origFile[posInFile].find_last_of(L"\"") - origFile[posInFile].find_first_of(L"\"") - 1,
+                                origLocStr.second);
+                        }
+                        catch (const char* error_message) {
+                            std::cout << error_message << std::endl;
+                        }
+                        
                     }
-                    out.close();
                 }
             }
+            else {
+                remove(pathToQuestFileOutput);
+                std::wofstream out(pathToQuestFileOutput);
+
+                for (int i = 0; i < origFile.size(); i++) {
+                    out << origFile[i] << L"\n";
+                }
+                out.close();
+            }
         }
-        catch (std::string error_message) {
-            std::cerr << error_message << std::endl;
-            return;
-        }
+        
 
         std::cerr << "build complete\n";
     }
